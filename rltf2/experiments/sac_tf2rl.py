@@ -3,7 +3,6 @@ import tensorflow as tf
 from tf2rl.algos.sac import SAC
 from rltf2.utils.third_party_wrappers import SACWrapper
 from rltf2.utils.experiment import GymExperiment
-from rltf2.utils.replay_buffer import CPPReplayBuffer
 from rltf2.agents import sac
 from tf2rl.experiments.trainer import Trainer
 

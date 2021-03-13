@@ -1,9 +1,6 @@
 import gym
-from rltf2.utils.replay_buffer import ReplayBuffer, CPPReplayBuffer
 from rltf2.utils.experiment import GymExperiment
 from rltf2.agents.sac import SAC
-import tensorflow as tf
-import cpprb
 
 CONFIG_PATH = '/Users/djordjebozic/ML/personal/RL/rl_projects/algos/docs/config.yaml'
 ENV_NAME = "Pendulum-v0"

@@ -1,12 +1,12 @@
 import gym
 import tensorflow as tf
 import numpy as np
+
 from tf2rl.algos.sac import SAC
 from tf2rl.experiments.trainer import Trainer
-import cpprb
 
 from rltf2.utils.third_party_wrappers import SACWrapper
-from rltf2.utils.replay_buffer import ReplayBuffer, CPPReplayBuffer
+from rltf2.utils.replay_buffer import CPPReplayBuffer
 from rltf2.agents import sac
 
 CONFIG_PATH = '/Users/djordjebozic/ML/personal/RL/rl_projects/algos/docs/config.yaml'

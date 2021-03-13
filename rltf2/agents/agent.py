@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import tensorflow as tf
-from rltf2.core.rl_nn import RLNet
 from typing import List
+from rltf2.core.rl_nn import RLNet
 
 
 class Agent(ABC, tf.keras.Model):

@@ -1,8 +1,7 @@
-from tf2rl.algos.sac import SAC
-from rltf2.agents.agent import Agent
-from tf2rl.misc.target_update_ops import update_target_variables
 import tensorflow as tf
 from abc import ABC, abstractmethod
+from tf2rl.algos.sac import SAC
+from tf2rl.misc.target_update_ops import update_target_variables
 
 
 class AlgoWrapper(ABC):

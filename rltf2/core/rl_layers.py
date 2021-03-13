@@ -2,8 +2,6 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 
 
-# TODO: Turn calls into tf.functions
-
 class MLPBody(tf.keras.layers.Layer):
     def __init__(self, layers_units, activation='relu', name='mlp_body'):
         super(MLPBody, self).__init__(name=name)
