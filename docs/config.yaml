@@ -1,0 +1,26 @@
+train:
+    max_episodes: 3000
+    max_steps: 3e6
+    warmup_steps: 10000
+    max_steps_per_episode: 200
+    agent_update_interval: 1
+    batch_size: 256
+
+evaluate:
+  separate_evaluation: true
+  max_episodes: 15
+  max_steps: 1e3
+  agent_eval_interval: 1e3
+
+replay_buffer:
+  capacity: 1e6
+  # 'custom', 'cpprb', default is custom
+  type: cpprb
+
+log_and_store:
+  trial_name: SAC_test
+  store_interval: 1e4
+  summary_interval: 1e3
+  num_episodes_mean_episode_return: 1
+  store_graph: False
+
