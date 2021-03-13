@@ -84,8 +84,6 @@ class ReplayBuffer(ReplayBufferProto):
         )
         self._data = []
         self.max_len = int(storage_size)
-        self.act_dtype = act_dtype
-        self.obs_dtype = obs_dtype
 
         self._next_id = 0
         self._terminals = set([])
@@ -94,16 +92,30 @@ class ReplayBuffer(ReplayBufferProto):
 
     @staticmethod
     def _preprocess(var, dtype):
-        # TODO: Implement this. Makes no sense in CPPRB because it stores them as numpy anyways.
-        pass
+        if hasattr(var, 'shape') and len(var.shape) > 1 and var.shape[1] == 1:
+            if tf.is_tensor(var):
+                var = tf.squeeze(var, axis=1)
+            else:
+                var = np.squeeze(var, axis=1)
+
+        if hasattr(var, 'dtype') and var.dtype is not dtype:
+            if tf.is_tensor(var):
+                var = (tf.make_ndarray(var)).astype(dtype)
+            else:
+                var = tf.convert_to_tensor(var, dtype=dtype)
+
+        if not hasattr(var, 'dtype') and isinstance(dtype, tf.DType):
+            var = tf.convert_to_tensor(var, dtype=dtype)
+
+        return var
 
     def _add(self,  obs, action, next_obs, reward, done):
 
         obs = self._preprocess(var=obs, dtype=self.obs_dtype)
         action = self._preprocess(var=action, dtype=self.act_dtype)
         next_obs = self._preprocess(var=next_obs, dtype=self.obs_dtype)
-        reward = self._preprocess(var=reward, dtype=tf.float32)
-        done = self._preprocess(var=done, dtype=tf.float32)
+        reward = self._preprocess(var=reward, dtype=self.default_dtype)
+        done = self._preprocess(var=done, dtype=self.default_dtype)
 
         if len(self._data) < self.max_len:
             self._data.append((obs, action, next_obs, reward, done))
@@ -139,8 +151,8 @@ class ReplayBuffer(ReplayBufferProto):
         obss = tf.convert_to_tensor(value=obss, dtype=self.obs_dtype)
         actions = tf.convert_to_tensor(value=actions, dtype=self.act_dtype)
         next_obss = tf.convert_to_tensor(value=next_obss, dtype=self.act_dtype)
-        rewards = tf.convert_to_tensor(value=rewards, dtype=self.act_dtype)
-        dones = tf.convert_to_tensor(value=dones, dtype=self.act_dtype)
+        rewards = tf.convert_to_tensor(value=rewards, dtype=self.default_dtype)
+        dones = tf.convert_to_tensor(value=dones, dtype=self.default_dtype)
 
         return obss, actions, next_obss, rewards, dones
 

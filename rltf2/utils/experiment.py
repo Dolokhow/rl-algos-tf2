@@ -106,7 +106,6 @@ class Experiment:
         self.summary_interval, self.store_interval, \
             self.num_episode_returns, self.store_graph = self._parse_logging_args(params=params)
 
-        self.log_dir, self.weights_dir = self._init_store_dirs()
         self.summary_writer = tf.summary.create_file_writer(self.log_dir)
         self.checkpoint, self.checkpoint_manager = self._init_checkpoints()
         self.logger.info('{0: <5} :: SUCCESSFULLY CREATED EXPERIMENT: ID: {1}.'.format(
