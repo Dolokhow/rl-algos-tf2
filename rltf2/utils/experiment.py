@@ -307,18 +307,27 @@ class Experiment:
             summaries=summaries,
             step=self.cum_step_tr
         )
-        if self.store_graph is True:
-            with self.summary_writer.as_default():
-                tf.summary.trace_export(
-                    name=self.agent.name,
-                    step=self.cum_step_tr)
 
     def _store_model(self):
         self.checkpoint_manager.save()
-        # TODO: Serialization of non standard graphs is not easy. This piece of code needs to be handled
-        # by the agent itself. Implement this.
-        # for entry, model in self.agent.inference_model_dict.items():
-        #     tf.saved_model.save(obj=model, export_dir=self.weights_dir)
+        # TODO: Figure out if it is really necessary to serialize the model this way.
+        #  Current issue is that tfp.distribution objects are not savable with tf.saved_model:
+        #  TypeError: To be compatible with tf.eager.defun, Python functions must return zero or more Tensors;
+        #  in compilation of <function GaussianLayer.call at 0x1576e0c80>, found return value of type
+        #  <class 'tensorflow_probability.python.distributions.mvn_diag.MultivariateNormalDiag'>, which is not a Tensor.
+        #  This will create the issue if we ever need to export the actual graph with frozen weights to be used in a
+        #  third party app.
+        # kwargs = self.agent.get_forward_pass_input_spec()
+        # signatures = self.agent.forward_pass.get_concrete_function(**kwargs)
+        # try:
+        #     tf.saved_model.save(
+        #         obj=self.agent,
+        #         export_dir=self.weights_dir,
+        #         signatures=signatures
+        #     )
+        # except TypeError as e:
+        #     self.logger.warning('{0: <5} :: Failed to serialize model graph. Original ERROR MSG: {1}'
+        #                         .format(self._LOG_ORIGIN, str(e)))
 
     def _take_step(self, action, test):
         obs, reward, done, args = self._env_action(action=action, test=test)
@@ -414,8 +423,6 @@ class Experiment:
 
             if self.cum_step_tr > self.warmup_steps:
                 if self.cum_step_tr % self.agnt_updt_interval == 0:
-                    if self.store_graph is True:
-                        tf.summary.trace_on(graph=True)
                     batch = self.rb.sample(batch_size=self.batch_size)
                     summaries = self.agent.update(
                         batch_obs=batch[0],

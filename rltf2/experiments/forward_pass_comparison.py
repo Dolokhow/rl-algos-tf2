@@ -47,8 +47,8 @@ if __name__ == '__main__':
         auto_alpha=args.auto_alpha)
 
     custom_policy = sac.SAC(
-        action_dim=env.action_space.high.size,
-        state_shape=env.observation_space.shape,
+        action_shape=env.action_space.high.size,
+        obs_shape=env.observation_space.shape,
         max_action=env.action_space.high[0],
         lr=3e-4,
         actor_units=[256, 256],

@@ -7,7 +7,7 @@ class RLNet(tf.keras.Model, ABC):
     def __init__(self, body, input_dim, lr=None, optimizer=None, name=None):
         super(RLNet, self).__init__(name=name)
         self.body = body
-        self._input_dim = input_dim
+        self.input_dim = input_dim
 
         if optimizer is None:
             assert lr is not None
@@ -61,7 +61,7 @@ class StochasticNormalNet(RLNet):
         self.squash = squash
         self.eps = eps
         self.max_action = max_action
-        self.build(input_shape=self._input_dim)
+        self.build(input_shape=self.input_dim)
 
     @tf.function
     def call(self, inputs, training=True, **kwargs):
@@ -97,7 +97,7 @@ class VNet(RLNet):
         super(VNet, self).__init__(body=body, input_dim=input_dim, lr=lr,
                                    optimizer=optimizer, name=name)
         self.out_layer = tf.keras.layers.Dense(units=1, activation='linear', name='value_out')
-        self.build(input_shape=self._input_dim)
+        self.build(input_shape=self.input_dim)
 
     @tf.function
     def call(self, inputs, training=None, **kwargs):

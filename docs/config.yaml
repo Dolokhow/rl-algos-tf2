@@ -10,7 +10,7 @@ evaluate:
   separate_evaluation: true
   max_episodes: 15
   max_steps: 1e3
-  agent_eval_interval: 1e3
+  agent_eval_interval: 1e4
 
 replay_buffer:
   capacity: 1e6
@@ -19,7 +19,7 @@ replay_buffer:
 
 log_and_store:
   trial_name: SAC_test
-  store_interval: 1e4
+  store_interval: 1e3
   summary_interval: 1e3
   num_episodes_mean_episode_return: 1
   store_graph: False
