@@ -28,7 +28,7 @@ if __name__ == '__main__':
         store_dir='/Users/djordjebozic/ML/personal/RL/rl_projects/algos/results/SAC',
         config_path=CONFIG_PATH,
         eval_env=None,
-        render_mode='human',
+        render_mode='default',
         name='SAC_Pendulum-v0-cpprb'
     )
     experiment.train()

@@ -12,19 +12,20 @@ from rltf2.utils.file_io import copy_file, yaml_to_dict, check_create_dir, \
 
 
 class Experiment:
-    def __init__(self, env, agent, config_path, store_dir, eval_env=None, name=None, render_mode=None):
+    def __init__(self, env, agent, config_path, store_dir, eval_env=None, name=None, render_mode='default'):
 
         self.__LOG_DIR = 'logs'
         self.__WEIGHTS_DIR = 'weights'
         self._LOG_ORIGIN = 'INIT'
 
         self.env = env
-        # Render mode can be either 'human' for default rendering mechanism in OpenAI Gym
-        # or 'rgb_array' to be used in custom render technique implementation
+        # Render mode can be either 'default' for default rendering mechanism of environment eg OpenAI Gym
+        # or 'custom' to be used in custom render technique implementation
         if render_mode is None:
             self.render = False
         else:
             self.render = True
+            assert render_mode in ('default', 'custom')
             self.render_mode = render_mode
         self.agent: Agent = agent
 
@@ -339,7 +340,7 @@ class Experiment:
     def _take_step(self, action, test):
         obs, reward, done, args = self._env_action(action=action, test=test)
         if self.render is True:
-            ret = self._env_render(test=test, mode=self.render_mode)
+            ret = self._env_render(test=test)
         # TODO: Move this to constructor and warn if selected max number of steps i greater than env.
         if (hasattr(self.env, "_max_episode_steps") and
                 self.cur_ep_step_tr == self.env._max_episode_steps):
@@ -379,7 +380,7 @@ class Experiment:
 
             next_obs = self._env_reset(test=False)
             if self.render is True:
-                ret = self._env_render(test=False, mode=self.render_mode)
+                ret = self._env_render(test=False)
 
             self.cum_ep_tr += 1
             self.ep_start_t_tr = time.perf_counter()
@@ -407,7 +408,7 @@ class Experiment:
 
             next_obs = self._env_reset(test=True)
             if self.render is True:
-                ret = self._env_render(test=True, mode=self.render_mode)
+                ret = self._env_render(test=True)
 
             self.cur_ep_ev += 1
             self.ep_start_t_ev = time.perf_counter()
@@ -431,7 +432,7 @@ class Experiment:
 
         obs = self.init_obs_tr
         if self.render is True:
-            ret = self._env_render(test=False, mode=self.render_mode)
+            ret = self._env_render(test=False)
 
         summaries = []
         self.ep_start_t_tr = time.perf_counter()
@@ -474,7 +475,7 @@ class Experiment:
 
             obs = self.init_obs_ev
             if self.render is True:
-                ret = self._env_render(test=True, mode=self.render_mode)
+                ret = self._env_render(test=True)
             self.ep_start_t_ev = time.perf_counter()
 
             while self.cur_ep_ev < self.max_ep_ev and self.cum_step_ev < self.max_step_ev:
@@ -520,7 +521,7 @@ class Experiment:
         pass
 
     @abstractmethod
-    def _env_render(self, test, mode):
+    def _env_render(self, test):
         pass
 
     @abstractmethod
@@ -529,6 +530,12 @@ class Experiment:
 
 
 class GymExperiment(Experiment):
+    def __init__(self, env, agent, config_path, store_dir, eval_env=None, name=None, render_mode='default'):
+        super().__init__(env, agent, config_path, store_dir, eval_env, name, render_mode)
+        if self.render_mode == 'default':
+            self.render_mode = 'human'
+        else:
+            self.render_mode = 'rgb_array'
 
     def _env_reset(self, test):
         if test is False:
@@ -554,11 +561,11 @@ class GymExperiment(Experiment):
             observation, reward, done, info = self.eval_env.step(action)
         return observation, reward, done, info
 
-    def _env_render(self, test, mode):
+    def _env_render(self, test):
         if test is False:
-            ret_val = self.env.render(mode=mode)
+            ret_val = self.env.render(mode=self.render_mode)
         else:
-            ret_val = self.eval_env.render(mode=mode)
+            ret_val = self.eval_env.render(mode=self.render_mode)
         return ret_val
 
     def _copy_env(self):
