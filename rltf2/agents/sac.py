@@ -73,7 +73,7 @@ class SAC(Agent):
     @tf.function
     def select_action(self, obs, test=False):
         action, _ = self.actor(obs, training=not test)
-        return tf.squeeze(action, axis=1)
+        return tf.squeeze(action, axis=0)
 
     @tf.function
     def forward_pass(self, batch_obs, batch_act, batch_next_obs, training=True):

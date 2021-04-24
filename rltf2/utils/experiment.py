@@ -368,8 +368,7 @@ class Experiment:
         self.cum_step_tr += 1
         self.cur_ep_step_tr += 1
         if done is True or self.cur_ep_step_tr > self.max_steps_per_ep:
-
-            log_postfix = ' @' + str(self.cur_ep_step_tr) + ' step'
+            end_step = self.cur_ep_step_tr
             elapsed_time = time.perf_counter() - self.ep_start_t_tr
             fps = (self.cur_ep_step_tr - 1) / elapsed_time
             elapsed_time *= 1000
@@ -385,8 +384,8 @@ class Experiment:
             self.cum_ep_tr += 1
             self.ep_start_t_tr = time.perf_counter()
 
-            self.logger.info('{0: <5} :: Episode {1: >7}/{2: <7} finished {3: <7}. REWARD: {4: >10.2f}. '
-                             'FPS: {5: >8.2f}. ABS TIME [ms]: {6: >10.1f}.'.format(self._LOG_ORIGIN,  self.cum_ep_tr, self.max_ep_tr, log_postfix, self.ep_returns_tr[-1], fps, elapsed_time))
+            self.logger.info('{0: <5} :: Episode {1: >7}/{2: <7} finished @ {3: <5} step. REWARD: {4: >10.2f}. '
+                             'FPS: {5: >8.2f}. ABS TIME [ms]: {6: >10.1f}.'.format(self._LOG_ORIGIN,  self.cum_ep_tr, self.max_ep_tr, end_step, self.ep_returns_tr[-1], fps, elapsed_time))
         else:
             next_obs = obs
         self.cur_ep_return_tr += reward

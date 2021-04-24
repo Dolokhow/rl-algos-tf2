@@ -3,7 +3,7 @@ from rltf2.utils.experiment import GymExperiment
 from rltf2.agents.sac import SAC
 
 CONFIG_PATH = '/Users/djordjebozic/ML/personal/RL/rl_projects/algos/docs/config.yaml'
-ENV_NAME = "Ant-v2"
+ENV_NAME = "Pendulum-v0"
 REPLAY_BUFFER_SIZE = 1e5
 
 if __name__ == '__main__':
@@ -29,6 +29,6 @@ if __name__ == '__main__':
         config_path=CONFIG_PATH,
         eval_env=None,
         render_mode='human',
-        name='SAC_Ant-v2-cpprb'
+        name='SAC_Pendulum-v0-cpprb'
     )
     experiment.train()
