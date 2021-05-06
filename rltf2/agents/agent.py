@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 import tensorflow as tf
-from typing import List
-from rltf2.core.rl_nn import RLNet
+from rltf2.utils.vector_ops import shape_expand_dim
 
 
 class Agent(ABC, tf.keras.Model):
@@ -9,35 +8,22 @@ class Agent(ABC, tf.keras.Model):
         super(Agent, self).__init__(name=name)
         self.discount = discount
 
-        self.action_shape = self._configure_shape(shape=action_shape)
-        self.obs_shape = self._configure_shape(shape=obs_shape)
+        # Add batch dimension
+        self.action_shape = action_shape
+        self.obs_shape = obs_shape
         self.input_dtype = input_dtype
         self.action_dtype = action_dtype
 
-        # TO BE SET WITHIN A SUBCLASS
-        # List of actual neural networks that run inference either during training, or evaluation.
-        # To be set within a subclass.
-        self._rl_nns: List[(str, RLNet)] = []
-
     @staticmethod
-    def _configure_shape(shape):
-        if isinstance(shape, tuple):
-            # Adding batch dim
-            shape = (1,) + shape
-        elif isinstance(shape, int):
-            shape = (1, shape)
-        elif isinstance(shape, list):
-            shape.insert(0, 1)
-        else:
-            raise ValueError('Attribute shape must be either python tuple, int or a list.')
-        return shape
+    def _add_batch_dim(shape):
+        return shape_expand_dim(shape=shape, axis=0)
 
     def set_weights_from_dict(self, param_dict):
         nn_counter = 0
-        total_nns = len(self._rl_nns)
+        total_nns = len(self._inference_nets)
 
         for idx, weights in param_dict.items():
-            for rl_nn in self._rl_nns:
+            for rl_nn in self._inference_nets:
                 if rl_nn[0] == idx:
                     model = rl_nn[1]
                     model.soft_weight_update(
@@ -55,10 +41,10 @@ class Agent(ABC, tf.keras.Model):
         nn_counter = 0
         percentage = 0
         percentages_per_net = []
-        total_nns = len(self._rl_nns)
+        total_nns = len(self._inference_nets)
 
         for idx, weights in param_dict.items():
-            for rl_nn in self._rl_nns:
+            for rl_nn in self._inference_nets:
                 if rl_nn[0] == idx:
                     model = rl_nn[1]
                     percent = model.compare_weights(
@@ -104,11 +90,11 @@ class Agent(ABC, tf.keras.Model):
         pass
 
     @abstractmethod
-    def select_action(self, obs, test=False):
+    def _batch_inference(self, batch_obs, batch_act, batch_next_obs, batch_rew, batch_done, training):
         pass
 
     @abstractmethod
-    def _batch_inference(self, batch_obs, batch_act, batch_next_obs, batch_rew, batch_done, training):
+    def select_action(self, obs, test=False):
         pass
 
     # Equivalent to Model.call(). Created as a separate entity because default arguments of Model.call() may
@@ -120,6 +106,13 @@ class Agent(ABC, tf.keras.Model):
     @abstractmethod
     def get_forward_pass_input_spec(self):
         pass
+
+    @abstractmethod
+    def on_new_episode(self):
+        pass
+
+    def modify_observation(self, obs):
+        return obs
 
 
 

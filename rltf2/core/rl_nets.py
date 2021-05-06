@@ -1,6 +1,7 @@
 import tensorflow as tf
 from abc import ABC
-from rltf2.core.rl_layers import GaussianLayer
+from rltf2.core.nn_layers import GaussianLayer
+from rltf2.core.nn_layers import SoftmaxLayer
 
 
 class RLNet(tf.keras.Model, ABC):
@@ -94,8 +95,7 @@ class StochasticNormalNet(RLNet):
 
 class VNet(RLNet):
     def __init__(self, body, input_dim, lr=None, optimizer=None, name='value_net'):
-        super(VNet, self).__init__(body=body, input_dim=input_dim, lr=lr,
-                                   optimizer=optimizer, name=name)
+        super(VNet, self).__init__(body=body, input_dim=input_dim, lr=lr, optimizer=optimizer, name=name)
         self.out_layer = tf.keras.layers.Dense(units=1, activation='linear', name='value_out')
         self.build(input_shape=self.input_dim)
 
@@ -104,3 +104,22 @@ class VNet(RLNet):
         logits = self.body(inputs=inputs)
         cur_output = self.out_layer(inputs=logits)
         return tf.squeeze(cur_output, axis=1)
+
+
+# General Purpose Classifier
+class GPClassifier(RLNet):
+    def __init__(self, body, input_dim, num_classes, raw_logits_out=True, lr=None, optimizer=None, name='classifier'):
+        super(GPClassifier, self).__init__(body=body, input_dim=input_dim, lr=lr, optimizer=optimizer, name=name)
+        if raw_logits_out is False:
+            self.out_layer = SoftmaxLayer(num_classes=num_classes)
+        else:
+            self.out_layer = tf.keras.layers.Dense(units=num_classes, activation='linear')
+        self.logits_out = raw_logits_out
+        self.build(input_shape=self.input_dim)
+
+    @tf.function
+    def call(self, inputs, training=None, **kwargs):
+        logits = self.body(inputs=inputs)
+        cur_output = self.out_layer(inputs=logits)
+        return cur_output
+

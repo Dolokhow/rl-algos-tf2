@@ -1,13 +1,14 @@
 import tensorflow as tf
-from rltf2.core.rl_nn import StochasticNormalNet, VNet
-from rltf2.core.rl_layers import MLPBody
+from rltf2.core.rl_nets import StochasticNormalNet, VNet
+from rltf2.core.nn_layers import MLPBody
 from rltf2.agents.agent import Agent
+from rltf2.utils.vector_ops import shape_expand_axis
 
 
 class SAC(Agent):
     def __init__(self, action_shape, obs_shape, max_action=1., lr=3e-4, actor_units=(256, 256),
-                 critic_units=(256, 256), smooth_fact=5e-3, temp=.2, discount=0.99, input_dtype=tf.float32):
-        super(SAC, self).__init__(name='SAC',
+                 critic_units=(256, 256), smooth_fact=5e-3, temp=.2, discount=0.99, input_dtype=tf.float32, name='SAC'):
+        super(SAC, self).__init__(name=name,
                                   action_shape=action_shape,
                                   obs_shape=obs_shape,
                                   discount=discount,
@@ -16,35 +17,32 @@ class SAC(Agent):
                                   )
         self.temp = temp
         self.smooth_fact = smooth_fact
-
-        obs_shape_lst = list(self.obs_shape)
-        obs_shape_lst[-1] += self.action_shape[-1]
-        critic_q_input_shape = tuple(obs_shape_lst)
+        critic_q_input_shape = shape_expand_axis(shape=obs_shape, axis=-1, size=action_shape)
 
         self.critic_q1 = VNet(
             body=MLPBody(layers_units=critic_units, name='Q1_MLP'),
-            input_dim=critic_q_input_shape,
+            input_dim=self._add_batch_dim(critic_q_input_shape),
             name='Q1_Critic',
             lr=lr,
             optimizer=None
         )
         self.critic_q2 = VNet(
             body=MLPBody(layers_units=critic_units, name='Q2_MLP'),
-            input_dim=critic_q_input_shape,
+            input_dim=self._add_batch_dim(critic_q_input_shape),
             name='Q2_Critic',
             lr=lr,
             optimizer=None
         )
         self.critic_v = VNet(
             body=MLPBody(layers_units=critic_units, name='V_MLP'),
-            input_dim=self.obs_shape,
+            input_dim=self._add_batch_dim(obs_shape),
             name='V_Critic',
             lr=lr,
             optimizer=None
         )
         self.critic_v_targ = VNet(
             body=MLPBody(layers_units=critic_units, name='V_MLP'),
-            input_dim=self.obs_shape,
+            input_dim=self._add_batch_dim(obs_shape),
             name='V_Critic_Target',
             lr=lr,
             optimizer=None
@@ -56,7 +54,7 @@ class SAC(Agent):
         )
         self.actor = StochasticNormalNet(
             body=MLPBody(layers_units=actor_units, name='Act_MLP'),
-            input_dim=self.obs_shape,
+            input_dim=self._add_batch_dim(obs_shape),
             name='Stochastic_Actor',
             act_feature_dim=action_shape,
             max_action=max_action,
@@ -64,11 +62,13 @@ class SAC(Agent):
             optimizer=None
         )
         self.inference_model_dict = {self.name + '_actor_': self.actor}
-        self._rl_nns = [('q1', self.critic_q1), ('q2', self.critic_q2),
-                        ('v', self.critic_v), ('actor', self.actor), ('v_targ', self.critic_v_targ)]
+        self._learned_nets = [('q1', self.critic_q1), ('q2', self.critic_q2), ('v', self.critic_v), ('actor', self.actor)]
 
     def get_serialization_dict(self):
         return {self.name + '_actor': self.actor}
+
+    def on_new_episode(self):
+        pass
 
     @tf.function
     def select_action(self, obs, test=False):
@@ -134,7 +134,7 @@ class SAC(Agent):
 
         summary_args = []
         debug_args = [q1_out, q2_out, next_v_targ, v_out, logp, min_q_smpl, sample_actions, q1_out_smpl, q2_out_smpl]
-        for rl_nn, loss in zip(self._rl_nns[:-1], [q1_loss, q2_loss, critic_loss, actor_loss]):
+        for rl_nn, loss in zip(self._learned_nets, [q1_loss, q2_loss, critic_loss, actor_loss]):
             model = rl_nn[1]
             summary_args.append((model.name + "_loss", "scalar", loss))
             debug_args.append(loss)

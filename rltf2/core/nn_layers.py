@@ -15,6 +15,19 @@ class MLPBody(tf.keras.layers.Layer):
         return features
 
 
+class SoftmaxLayer(tf.keras.layers.Layer):
+    def __init__(self, num_classes, name='softmax_out'):
+        super(SoftmaxLayer, self).__init__(name=name)
+        self.layers = [tf.keras.layers.Dense(units=num_classes, activation='linear'),
+                       tf.keras.layers.Softmax()]
+
+    def call(self, inputs, **kwargs):
+        features = inputs
+        for layer in self.layers:
+            features = layer(features)
+        return features
+
+
 class GaussianLayer(tf.keras.layers.Layer):
     def __init__(self, feature_dim, clip=True, squash=True, name='gaussian_sac'):
         super(GaussianLayer, self).__init__(name=name)

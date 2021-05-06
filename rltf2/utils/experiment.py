@@ -61,7 +61,7 @@ class Experiment:
         self.ep_returns_tr = []
         # Train initial environment obs. If environment has random initial state, it is going to be handled
         # within the _env_reset() function.
-        self.init_obs_tr = self._env_reset(test=False)
+        self.init_obs_tr = self._wrapped_env_reset(test=False)
 
         # ############ EVALUATION ARGS #######
         # Whether to do a separate evaluation
@@ -86,7 +86,7 @@ class Experiment:
             self.eval_env = self._copy_env()
             # Eval initial environment obs. If environment has random initial state, it is going to be handled
             # within the _env_reset() function.
-            self.init_obs_ev = self._env_reset(test=True)
+            self.init_obs_ev = self._wrapped_env_reset(test=True)
         else:
             self.eval_env = eval_env
 
@@ -102,10 +102,10 @@ class Experiment:
                 'obs_dtype': self.agent_input_dtype,
                 'act_dtype': self.agent_action_dtype,
                 'default_dtype': self.agent_input_dtype,
-                'env': {"obs": {"shape": self.env.observation_space.shape},
+                'env': {"obs": {"shape": self.agent.obs_shape},
                         "act": {"shape": self.env.action_space.shape},
                         "rew": {},
-                        "next_obs": {"shape": self.env.observation_space.shape},
+                        "next_obs": {"shape": self.agent.obs_shape},
                         "done": {}}
             }
         )
@@ -339,6 +339,7 @@ class Experiment:
 
     def _take_step(self, action, test):
         obs, reward, done, args = self._env_action(action=action, test=test)
+        obs = self.agent.modify_observation(obs=obs)
         if self.render is True:
             ret = self._env_render(test=test)
         # TODO: Move this to constructor and warn if selected max number of steps i greater than env.
@@ -369,6 +370,8 @@ class Experiment:
         self.cum_step_tr += 1
         self.cur_ep_step_tr += 1
         if done is True or self.cur_ep_step_tr > self.max_steps_per_ep:
+            self.agent.on_new_episode()
+
             end_step = self.cur_ep_step_tr
             elapsed_time = time.perf_counter() - self.ep_start_t_tr
             fps = (self.cur_ep_step_tr - 1) / elapsed_time
@@ -378,7 +381,7 @@ class Experiment:
             self.cur_ep_return_tr = 0
             self.cur_ep_step_tr = 0
 
-            next_obs = self._env_reset(test=False)
+            next_obs = self._wrapped_env_reset(test=False)
             if self.render is True:
                 ret = self._env_render(test=False)
 
@@ -397,6 +400,7 @@ class Experiment:
         self.cum_step_ev += 1
         self.cur_ep_step_ev += 1
         if done is True or self.cur_ep_step_ev > self.max_steps_per_ep:
+            self.agent.on_new_episode()
 
             elapsed_time = time.perf_counter() - self.ep_start_t_ev
             fps = (self.cur_ep_step_ev - 1) / elapsed_time
@@ -406,7 +410,7 @@ class Experiment:
             self.cur_ep_return_ev = 0
             self.cur_ep_step_ev = 0
 
-            next_obs = self._env_reset(test=True)
+            next_obs = self._wrapped_env_reset(test=True)
             if self.render is True:
                 ret = self._env_render(test=True)
 
@@ -502,6 +506,11 @@ class Experiment:
             self._eval_reset()
         else:
             self.logger.warning('{0: <5} :: Evaluation environment not defined!'.format(self._LOG_ORIGIN))
+
+    def _wrapped_env_reset(self, test):
+        obs = self._env_reset(test=test)
+        obs = self.agent.modify_observation(obs=obs)
+        return obs
 
     @abstractmethod
     def _env_reset(self, test):
