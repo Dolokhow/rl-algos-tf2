@@ -1,26 +1,27 @@
 train:
-    max_episodes: 3000
-    max_steps: 3e6
+    total_steps: 3e6
+    # total_episodes: 100000
     warmup_steps: 10000
-    max_steps_per_episode: 200
-    agent_update_interval: 1
+    max_steps_per_ep: 1000
     batch_size: 256
+    step_update_interval: 1
+    step_store_interval: 4e3
+    step_summary_interval: 5e3
+    average_factor: 1
+    data:
+      # train_method == TD (for TD methods where replay_buffer will be used) or tran_method == policy_optimization where
+      # no replay buffer will be used, but rather trajectory histories
+      train_method: TD
+      capacity: 1e6
+      # 'custom', 'cpprb', default is custom
+      type: cpprb
 
-evaluate:
-  separate_evaluation: true
-  max_episodes: 15
-  max_steps: 1e3
-  agent_eval_interval: 1e4
-
-replay_buffer:
-  capacity: 1e6
-  # 'custom', 'cpprb', default is custom
-  type: cpprb
-
-log_and_store:
-  trial_name: SAC_test
-  store_interval: 1e3
-  summary_interval: 1e3
-  num_episodes_mean_episode_return: 1
-  store_graph: False
+#evaluation:
+#  total_steps: 1000
+#  # total_episodes: 10
+#  max_steps_per_ep: 200
+#  num_top_options: 5
+#  # Evaluation interval counted in number of updates to the agent during the train procedure
+#  update_eval_interval: 2000
+#  average_factor: 3
 

@@ -212,78 +212,82 @@ def split_vector(t, index, axis):
 
 
 def main():
-    np_batch_obs = np.ones((2, 4))
-    np_opts = np.zeros((1, 3))
-    tf_batch_obs = tf.ones((2, 4))
-    tf_opts = tf.zeros((1, 3))
+    # np_batch_obs = np.ones((2, 4))
+    # np_opts = np.zeros((1, 3))
+    # tf_batch_obs = tf.ones((2, 4))
+    # tf_opts = tf.zeros((1, 3))
+    #
+    # py_batch_obs = [[1., 1., 1., 1.], [1., 1., 1., 1.]]
+    # py_batch_opts = [[0., 0.], [0., 0.]]
+    #
+    # # Test broadcast_1d_row_vector use cases
+    # # axis=0
+    # np_opts_broadcast = broadcast_1d_row_vector(t=np_opts, axis=0, new_dim=np_batch_obs.shape[0])
+    # print(np_opts_broadcast)
+    # tf_opts_broadcast = broadcast_1d_row_vector(t=tf_opts, axis=0, new_dim=np_batch_obs.shape[0])
+    # print(tf_opts_broadcast)
+    # print()
+    # # axis=1
+    # np_opts_broadcast = broadcast_1d_row_vector(t=np_opts, axis=0, new_dim=np_batch_obs.shape[0])
+    # print(np_opts_broadcast)
+    # tf_opts_broadcast = broadcast_1d_row_vector(t=tf_opts, axis=0, new_dim=np_batch_obs.shape[0])
+    # print(tf_opts_broadcast)
+    # print()
+    # print()
+    #
+    # # Test merge_vectors use cases
+    # # Vectors of the same type
+    # # np vectors
+    # np_modified_obs = force_merge_vectors(t1=np_batch_obs, t2=np_opts_broadcast, axis=1, pref_vtype=None)
+    # print(np_modified_obs)
+    # # tf vectors
+    # tf_modified_obs = force_merge_vectors(t1=tf_batch_obs, t2=tf_opts_broadcast, axis=1, pref_vtype=None)
+    # print(tf_modified_obs)
+    # print()
+    # # Vectors of different types
+    # # No type preference
+    # # t1 is np.array
+    # np_forced_obs = force_merge_vectors(t1=np_batch_obs, t2=tf_opts_broadcast, axis=1, pref_vtype=None)
+    # print(np_forced_obs)
+    # # t1 is tf.tensor
+    # tf_forced_obs = force_merge_vectors(t1=tf_batch_obs, t2=np_opts_broadcast, axis=1, pref_vtype=None)
+    # print(tf_forced_obs)
+    # print()
+    # # Type is preferred
+    # # np is preferred
+    # np_pref_obs = force_merge_vectors(t1=tf_batch_obs, t2=np_opts_broadcast, axis=1, pref_vtype='np')
+    # print(np_pref_obs)
+    # # tf is preferred
+    # tf_pref_obs = force_merge_vectors(t1=np_batch_obs, t2=tf_opts_broadcast, axis=1, pref_vtype='tf')
+    # print(tf_pref_obs)
+    # print()
+    # print()
+    #
+    # # Test splitting op
+    # # Positive index
+    # # tf
+    # tf_split_obs, tf_spit_opts = split_vector(t=tf_pref_obs, index=4, axis=1)
+    # print(tf_split_obs)
+    # print(tf_spit_opts)
+    # print()
+    # # np
+    # np_split_obs, np_spit_opts = split_vector(t=np_pref_obs, index=4, axis=1)
+    # print(np_split_obs)
+    # print(np_spit_opts)
+    # print()
+    # # Negative index
+    # # tf
+    # tf_split_obs, tf_spit_opts = split_vector(t=tf_pref_obs, index=-3, axis=1)
+    # print(tf_split_obs)
+    # print(tf_spit_opts)
+    # # np
+    # np_split_obs, np_spit_opts = split_vector(t=np_pref_obs, index=-3, axis=1)
+    # print(np_split_obs)
+    # print(np_spit_opts)
 
-    py_batch_obs = [[1., 1., 1., 1.], [1., 1., 1., 1.]]
-    py_batch_opts = [[0., 0.], [0., 0.]]
-
-    # Test broadcast_1d_row_vector use cases
-    # axis=0
-    np_opts_broadcast = broadcast_1d_row_vector(t=np_opts, axis=0, new_dim=np_batch_obs.shape[0])
-    print(np_opts_broadcast)
-    tf_opts_broadcast = broadcast_1d_row_vector(t=tf_opts, axis=0, new_dim=np_batch_obs.shape[0])
-    print(tf_opts_broadcast)
-    print()
-    # axis=1
-    np_opts_broadcast = broadcast_1d_row_vector(t=np_opts, axis=0, new_dim=np_batch_obs.shape[0])
-    print(np_opts_broadcast)
-    tf_opts_broadcast = broadcast_1d_row_vector(t=tf_opts, axis=0, new_dim=np_batch_obs.shape[0])
-    print(tf_opts_broadcast)
-    print()
-    print()
-
-    # Test merge_vectors use cases
-    # Vectors of the same type
-    # np vectors
-    np_modified_obs = force_merge_vectors(t1=np_batch_obs, t2=np_opts_broadcast, axis=1, pref_vtype=None)
-    print(np_modified_obs)
-    # tf vectors
-    tf_modified_obs = force_merge_vectors(t1=tf_batch_obs, t2=tf_opts_broadcast, axis=1, pref_vtype=None)
-    print(tf_modified_obs)
-    print()
-    # Vectors of different types
-    # No type preference
-    # t1 is np.array
-    np_forced_obs = force_merge_vectors(t1=np_batch_obs, t2=tf_opts_broadcast, axis=1, pref_vtype=None)
-    print(np_forced_obs)
-    # t1 is tf.tensor
-    tf_forced_obs = force_merge_vectors(t1=tf_batch_obs, t2=np_opts_broadcast, axis=1, pref_vtype=None)
-    print(tf_forced_obs)
-    print()
-    # Type is preferred
-    # np is preferred
-    np_pref_obs = force_merge_vectors(t1=tf_batch_obs, t2=np_opts_broadcast, axis=1, pref_vtype='np')
-    print(np_pref_obs)
-    # tf is preferred
-    tf_pref_obs = force_merge_vectors(t1=np_batch_obs, t2=tf_opts_broadcast, axis=1, pref_vtype='tf')
-    print(tf_pref_obs)
-    print()
-    print()
-
-    # Test splitting op
-    # Positive index
-    # tf
-    tf_split_obs, tf_spit_opts = split_vector(t=tf_pref_obs, index=4, axis=1)
-    print(tf_split_obs)
-    print(tf_spit_opts)
-    print()
-    # np
-    np_split_obs, np_spit_opts = split_vector(t=np_pref_obs, index=4, axis=1)
-    print(np_split_obs)
-    print(np_spit_opts)
-    print()
-    # Negative index
-    # tf
-    tf_split_obs, tf_spit_opts = split_vector(t=tf_pref_obs, index=-3, axis=1)
-    print(tf_split_obs)
-    print(tf_spit_opts)
-    # np
-    np_split_obs, np_spit_opts = split_vector(t=np_pref_obs, index=-3, axis=1)
-    print(np_split_obs)
-    print(np_spit_opts)
+    arr = np.array([1., 2, 3, 4, 1., 2, 3])
+    true_cond = list(np.where(arr == 1))
+    print(true_cond)
 
 
 if __name__ == '__main__':

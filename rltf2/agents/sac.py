@@ -11,6 +11,7 @@ class SAC(Agent):
         super(SAC, self).__init__(name=name,
                                   action_shape=action_shape,
                                   obs_shape=obs_shape,
+                                  num_options=1,
                                   discount=discount,
                                   input_dtype=input_dtype,
                                   action_dtype=tf.float32
@@ -136,7 +137,7 @@ class SAC(Agent):
         debug_args = [q1_out, q2_out, next_v_targ, v_out, logp, min_q_smpl, sample_actions, q1_out_smpl, q2_out_smpl]
         for rl_nn, loss in zip(self._learned_nets, [q1_loss, q2_loss, critic_loss, actor_loss]):
             model = rl_nn[1]
-            summary_args.append((model.name + "_loss", "scalar", loss))
+            summary_args.append([model.name + "_loss", "scalar", loss])
             debug_args.append(loss)
             grad = tape.gradient(loss, model.trainable_variables)
             model.optimizer.apply_gradients(zip(grad, model.trainable_variables))
@@ -148,4 +149,3 @@ class SAC(Agent):
             smooth_fact=self.smooth_fact
         )
         return summary_args, debug_args
-

@@ -4,7 +4,7 @@ from rltf2.utils.vector_ops import shape_expand_dim
 
 
 class Agent(ABC, tf.keras.Model):
-    def __init__(self, name, action_shape, obs_shape, discount=0.99, input_dtype=tf.float32, action_dtype=tf.float32):
+    def __init__(self, name, action_shape, obs_shape, num_options=1, full_ep_options=True, discount=0.99, input_dtype=tf.float32, action_dtype=tf.float32):
         super(Agent, self).__init__(name=name)
         self.discount = discount
 
@@ -13,6 +13,20 @@ class Agent(ABC, tf.keras.Model):
         self.obs_shape = obs_shape
         self.input_dtype = input_dtype
         self.action_dtype = action_dtype
+
+        # Support for multiple sub-policies
+        self.num_options = num_options
+        self._cur_option = 0
+        self.full_ep_options = full_ep_options
+
+    def get_cur_option_id(self):
+        return self._cur_option
+
+    def set_cur_option_id(self, option_id):
+        self._cur_option = option_id
+
+    def get_all_option_ids(self):
+        return list(range(0, self.num_options))
 
     @staticmethod
     def _add_batch_dim(shape):
@@ -112,7 +126,7 @@ class Agent(ABC, tf.keras.Model):
         pass
 
     def modify_observation(self, obs):
-        return obs
+        return obs, self._cur_option
 
 
 

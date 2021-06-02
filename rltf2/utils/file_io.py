@@ -49,6 +49,11 @@ def yaml_to_dict(file_path):
     return yaml_dict
 
 
+def dict_to_yaml(data, file_path):
+    with open(file_path, 'w') as outfile:
+        yaml.dump(data, outfile, default_flow_style=False)
+
+
 def split_path(file_path):
     path_to_file, file_name = ntpath.split(file_path)
     base_name, ext = os.path.splitext(file_name)
@@ -107,12 +112,14 @@ def copy_file(src_path, dst_path, force=False, unique_tag=True):
 
 
 def tensorboard_structured_summaries(writer, summaries, step):
+    # Implement name scopes here!
     with writer.as_default():
         for summary in summaries:
 
             s_name = summary[0]
             if tf.is_tensor(s_name):
                 s_name = s_name.numpy().decode('UTF-8')
+            name_scope, _, name, _ = split_path(s_name)
 
             s_type = summary[1]
             if tf.is_tensor(s_type):
@@ -123,7 +130,8 @@ def tensorboard_structured_summaries(writer, summaries, step):
                 s_value = s_value.numpy()
 
             if s_type == 'scalar':
-                tf.summary.scalar(name=s_name, data=s_value, step=step)
+                with tf.name_scope(name=name_scope):
+                    tf.summary.scalar(name=name, data=s_value, step=step)
         writer.flush()
 
 

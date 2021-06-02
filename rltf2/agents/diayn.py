@@ -33,8 +33,9 @@ class DIAYN(SAC):
                                     input_dtype=input_dtype
                                     )
         self.env_obs_shape = obs_shape
-        self._num_options = num_options
-        self._cur_option_id = self._sample_option()
+        # Modifies num_options attribute in Agent super class as SAC will initialize it to 1
+        self.num_options = num_options
+        self._cur_option = self._sample_option()
 
         self.discriminator = GPClassifier(
             body=MLPBody(layers_units=discriminator_units, name='Discriminator_MLP'),
@@ -52,21 +53,21 @@ class DIAYN(SAC):
     # Option handling
 
     def _sample_option(self):
-        return np.random.randint(0, self._num_options)
+        return np.random.randint(0, self.num_options)
 
     def _one_hot(self, option_id):
-        one_hot = np.zeros(self._num_options)
+        one_hot = np.zeros(self.num_options)
         one_hot[option_id] = 1
         return one_hot
 
     def modify_observation(self, obs):
-        option = self._one_hot(option_id=self._cur_option_id)
+        option = self._one_hot(option_id=self._cur_option)
         # This usage of force_merge_vectors is OK, but be careful in general.
         modified_obs = force_merge_vectors(t1=obs, t2=option, axis=1, pref_vtype=None)
-        return modified_obs
+        return modified_obs, self._cur_option
 
     def on_new_episode(self):
-        self._cur_option_id = self._sample_option()
+        self._cur_option = self._sample_option()
 
     @tf.function
     def forward_pass(self, batch_obs, batch_act, batch_next_obs, original_batch_next_obs, training=True):
@@ -90,7 +91,7 @@ class DIAYN(SAC):
         batch_not_done = 1. - tf.cast(batch_done, tf.float32)
         original_batch_next_obs, gt_batch_options = split_vector(
             t=batch_next_obs,
-            index=-self._num_options,
+            index=-self.num_options,
             axis=1
         )
 
@@ -112,7 +113,7 @@ class DIAYN(SAC):
             )
 
             # Equation (7) SAC, reward from environment substituted by option based reward from DIAYN
-            q_targ = tf.stop_gradient(-1 * discr_log + batch_not_done * self.discount * next_v_targ)
+            q_targ = tf.stop_gradient(discr_log + batch_not_done * self.discount * next_v_targ)
             q1_loss = tf.reduce_mean(tf.math.square(q1_out - q_targ))
             q2_loss = tf.reduce_mean(tf.math.square(q2_out - q_targ))
 
@@ -130,7 +131,7 @@ class DIAYN(SAC):
         debug_args = [q1_out, q2_out, next_v_targ, v_out, logp, min_q_smpl, sample_actions, q1_out_smpl, q2_out_smpl]
         for rl_nn, loss in zip(self._learned_nets, [q1_loss, q2_loss, critic_loss, actor_loss, discriminator_loss]):
             model = rl_nn[1]
-            summary_args.append((model.name + "_loss", "scalar", loss))
+            summary_args.append([model.name + "_loss", "scalar", loss])
             debug_args.append(loss)
             grad = tape.gradient(loss, model.trainable_variables)
             model.optimizer.apply_gradients(zip(grad, model.trainable_variables))
