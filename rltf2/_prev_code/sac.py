@@ -4,8 +4,8 @@ from rltf2.agents.sac import SAC
 from rltf2.agents.diayn import DIAYN
 
 CONFIG_PATH = '/Users/djordjebozic/ML/personal/RL/rl_projects/algos/docs/config.yaml'
-# Pendulum-v0, Hopper-v2, Ant-v2
-ENV_NAME = "Pendulum-v0"
+# Pendulum-v0, Hopper-v2, Ant-v2, HalfCheetah-v2
+ENV_NAME = "HalfCheetah-v2"
 REPLAY_BUFFER_SIZE = 1e5
 USE_DIYAN = True
 

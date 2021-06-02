@@ -55,7 +55,7 @@ if __name__ == '__main__':
         experiment = GymExperiment(
             env=env,
             agent=policy,
-            store_dir='/Users/djordjebozic/ML/personal/RL/rl_projects/algos/results/SAC',
+            store_dir='/results/prev_method/SAC',
             config_path=CONFIG_PATH,
             eval_env=None,
             name='SAC_Pendulum-v0'
