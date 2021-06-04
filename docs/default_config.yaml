@@ -16,12 +16,12 @@ train:
       # 'custom', 'cpprb', default is custom
       type: cpprb
 
-#evaluation:
-#  total_steps: 1000
-#  # total_episodes: 10
-#  max_steps_per_ep: 200
-#  num_top_options: 5
-#  # Evaluation interval counted in number of updates to the agent during the train procedure
-#  update_eval_interval: 2000
-#  average_factor: 3
+evaluation:
+  total_steps: 1000
+  # total_episodes: 10
+  max_steps_per_ep: 200
+  num_top_options: 5
+  # Evaluation interval counted in number of updates to the agent during the train procedure
+  update_eval_interval: 2000
+  average_factor: 3
 

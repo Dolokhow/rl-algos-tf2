@@ -171,6 +171,7 @@ class Trainer:
             total_steps = max_steps_per_ep * total_episodes
         else:
             total_steps = self._parse_single_arg(params_dict=train_sect, arg='total_steps', required=True, arg_type=int)
+        if max_steps_per_ep is None:
             max_steps_per_ep = total_steps
 
         batch_size = self._parse_single_arg(params_dict=train_sect, arg='batch_size', required=False, arg_type=int)
@@ -243,6 +244,7 @@ class Trainer:
                 total_steps = max_steps_per_ep * total_episodes
             else:
                 total_steps = self._parse_single_arg(params_dict=eval_sect, arg='total_steps', required=True, arg_type=int)
+            if max_steps_per_ep is None:
                 max_steps_per_ep = total_steps
 
             num_top_options = self._parse_single_arg(params_dict=eval_sect, arg='num_top_options', required=False, arg_type=int)
@@ -303,7 +305,7 @@ class Trainer:
     def train(self):
         num_updates = 0
         while self.train_runner.done is False:
-            self.train_runner.run(resume=True)
+            self.train_runner.run()
             loss_summaries = self.update()
             num_updates += 1
             train_tracker_history = os.path.join(self.log_dir, 'train_tracker.json')
@@ -328,8 +330,8 @@ class Trainer:
                     options_to_test = [self.agent.get_cur_option_id()]
 
                 for option_id in options_to_test:
-                    self.agent.set_cur_option_id(option_id)
-                    self.eval_runner.run(resume=False)
+                    self.eval_runner.cur_opt_id = option_id
+                    self.eval_runner.run()
                     # Could be a hard reset as well, this way it will keep track of returns and options history
                     # through all evaluation calls, ie. it's Tracker will not be reset!
                     # self.eval_runner.soft_reset()
@@ -461,6 +463,7 @@ class Runner:
         self.ep_start_t = time.perf_counter()
         self.agent.on_new_episode()
         self.obs = self._init_opt_obs()
+        self.cur_opt_id = self.agent.get_cur_option_id()
 
     def hard_reset(self):
         self.soft_reset()
@@ -493,10 +496,9 @@ class Runner:
             step=self.total_step
         )
 
-    def run(self, resume=True):
-        if resume is True:
-            # If the agent was being handled by some other runner object in the meantime
-            self.agent.set_cur_option_id(option_id=self.cur_opt_id)
+    def run(self):
+        # If the agent was being handled by some other runner object in the meantime
+        self.agent.set_cur_option_id(option_id=self.cur_opt_id)
         while self.total_step < self.total_steps:
             if self.defer_summaries is False and self.total_step % self.summary_interval == 0:
                 self._store_summaries()

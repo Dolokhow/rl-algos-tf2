@@ -36,6 +36,8 @@ class DIAYN(SAC):
         # Modifies num_options attribute in Agent super class as SAC will initialize it to 1
         self.num_options = num_options
         self._cur_option = self._sample_option()
+        self._p_z = np.full(self.num_options, 1 / self.num_options)
+        self.eps = 1e-6
 
         self.discriminator = GPClassifier(
             body=MLPBody(layers_units=discriminator_units, name='Discriminator_MLP'),
@@ -94,6 +96,8 @@ class DIAYN(SAC):
             index=-self.num_options,
             axis=1
         )
+        p_z = tf.reduce_sum(self._p_z * gt_batch_options, axis=1)
+        log_p_z = tf.math.log(p_z + self.eps)
 
         with tf.GradientTape(persistent=True) as tape:
             q1_out, q2_out, next_v_targ, v_out, logp, min_q_smpl, sample_actions, \
@@ -106,14 +110,14 @@ class DIAYN(SAC):
                 )
 
             # Augmented DIAYN option based reward: See first term of equation (3) in DIAYN
-            # log p(z) is omitted since we use categorical uniform distribution for sampling options
             discr_log = tf.nn.softmax_cross_entropy_with_logits(
                 labels=gt_batch_options,
                 logits=discriminator_out
             )
+            reward_surrogate = tf.stop_gradient(-1 * discr_log - log_p_z)
 
             # Equation (7) SAC, reward from environment substituted by option based reward from DIAYN
-            q_targ = tf.stop_gradient(discr_log + batch_not_done * self.discount * next_v_targ)
+            q_targ = tf.stop_gradient(reward_surrogate + batch_not_done * self.discount * next_v_targ)
             q1_loss = tf.reduce_mean(tf.math.square(q1_out - q_targ))
             q2_loss = tf.reduce_mean(tf.math.square(q2_out - q_targ))
 
