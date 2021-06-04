@@ -72,7 +72,7 @@ class DIAYN(SAC):
         self._cur_option = self._sample_option()
 
     @tf.function
-    def forward_pass(self, batch_obs, batch_act, batch_next_obs, original_batch_next_obs, training=True):
+    def forward_pass(self, batch_obs, batch_act, batch_next_obs, original_batch_obs, training=True):
         q1_out, q2_out, next_v_targ, v_out, logp, min_q_smpl, sample_actions, q1_out_smpl, q2_out_smpl = \
             super(DIAYN, self).forward_pass(
                 batch_obs=batch_obs,
@@ -80,7 +80,7 @@ class DIAYN(SAC):
                 batch_next_obs=batch_next_obs,
                 training=training
             )
-        discriminator_out = self.discriminator(original_batch_next_obs)
+        discriminator_out = self.discriminator(original_batch_obs)
         return q1_out, q2_out, next_v_targ, v_out, logp, min_q_smpl, sample_actions, \
             q1_out_smpl, q2_out_smpl, discriminator_out
 
@@ -91,8 +91,8 @@ class DIAYN(SAC):
             batch_done = tf.squeeze(batch_done, axis=1)
 
         batch_not_done = 1. - tf.cast(batch_done, tf.float32)
-        original_batch_next_obs, gt_batch_options = split_vector(
-            t=batch_next_obs,
+        original_batch_obs, gt_batch_options = split_vector(
+            t=batch_obs,
             index=-self.num_options,
             axis=1
         )
@@ -105,7 +105,7 @@ class DIAYN(SAC):
                     batch_obs=batch_obs,
                     batch_act=batch_act,
                     batch_next_obs=batch_next_obs,
-                    original_batch_next_obs=original_batch_next_obs,
+                    original_batch_obs=original_batch_obs,
                     training=training
                 )
 
