@@ -54,7 +54,7 @@ if __name__ == '__main__':
             critic_units=[300, 300],
             discriminator_units=[300, 300],
             smooth_fact=0.005,
-            temp=0.2,
+            temp=0.1,
             discount=0.99
         )
         dir_name = 'DIAYN'

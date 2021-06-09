@@ -514,6 +514,7 @@ class Runner:
                 reward=reward,
                 option_id=option_id,
                 episode_id=self.total_episode,
+                total_step=self.total_step,
                 done=ep_finished,
                 is_natural=ep_finished == bool(done)
             )
@@ -578,6 +579,8 @@ class Tracker:
             self.options_history[opt_id] = {
                 # Episode ids
                 'episodes': [],
+                # Cumulative end step of episode id
+                'total_step': [],
                 # Number of steps in episode
                 'num_steps': [],
                 # Percentage of steps in episode
@@ -603,6 +606,8 @@ class Tracker:
             self.options_history[opt_id] = {
                 # Episode ids
                 'episodes': [],
+                # Cumulative end step of episode id
+                'total_step': [],
                 # Number of steps in episode
                 'num_steps': [],
                 # Percentage of steps in episode
@@ -613,7 +618,7 @@ class Tracker:
                 'proj_returns': []
             }
 
-    def update_metrics(self, reward, option_id, episode_id, done, is_natural):
+    def update_metrics(self, reward, option_id, episode_id, total_step, done, is_natural):
         self.returns_ep.append(reward)
         self.options_ep.append(option_id)
         cumm_ep_return = np.sum(self.returns_ep)
@@ -642,6 +647,7 @@ class Tracker:
                     self.options_history[key]['rel_steps'].append(key_steps / reward_steps.shape[0])
                     self.options_history[key]['returns'].append(total_key_reward)
                     self.options_history[key]['episodes'].append(episode_id)
+                    self.options_history[key]['total_step'].append(total_step)
                     self.options_history[key]['proj_returns'].append(proj_key_reward)
 
                 # Updated current option usage
