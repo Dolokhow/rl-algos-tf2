@@ -7,7 +7,7 @@ def get_cmap(n, name='hsv'):
     return plt.cm.get_cmap(name, n)
 
 
-def draw_opt_percent_metric_hist(bins_metric, bins_steps, metric, option_history_dict, store_dir, colors=None):
+def draw_opt_percent_metric_hist(bins_metric, bins_steps, metric, option_history_dict, store_dir, colors=None, x_dist=2):
     sorted_met_bins = sorted(bins_metric)
     sorted_steps_bins = sorted(bins_steps)
     total_options = len(option_history_dict)
@@ -83,7 +83,7 @@ def draw_opt_percent_metric_hist(bins_metric, bins_steps, metric, option_history
     tick_range = []
     label_range = []
     for index in range(len(bar_range)):
-        if index % 2 == 1:
+        if index % x_dist == 1:
             tick_range.append(bar_range[index])
             label_range.append(labels[index])
     plt.xticks(tick_range, label_range)

@@ -6,7 +6,7 @@ from rltf2.agents.diayn import DIAYN
 
 CONFIG_PATH = '/Users/djordjebozic/ML/personal/RL/rl_projects/algos/docs/config.yaml'
 # Pendulum-v0, Hopper-v2, Ant-v2, HalfCheetah-v2
-ENV_NAME = "InvertedPendulum-v2"
+ENV_NAME = "Hopper-v2"
 CUSTOM_RENDER = False
 USE_DIYAN = True
 NUM_OPTIONS = 50
@@ -23,13 +23,6 @@ if __name__ == '__main__':
     else:
         renderer = GymRenderer(custom_render=CUSTOM_RENDER)
 
-    # Taken from original DIYAN: mujoco_all_diayn.py 176-185
-    # obs_space = env.spec.observation_space
-    # assert isinstance(obs_space, spaces.Box)
-    # low = np.hstack([obs_space.low, np.full(variant['num_skills'], 0)])
-    # high = np.hstack([obs_space.high, np.full(variant['num_skills'], 1)])
-    # aug_obs_space = spaces.Box(low=low, high=high)
-    # aug_env_spec = EnvSpec(aug_obs_space, env.spec.action_space)
     if not USE_DIYAN:
         policy = SAC(
             action_shape=act_shape,

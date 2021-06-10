@@ -8,6 +8,8 @@ import gym
 class EnvInterface(ABC):
     def __init__(self, env):
         self.env = env
+        # To be set within a subclass if exists
+        self.step_limit = None
 
     @abstractmethod
     def get_obs_shape(self):
@@ -23,7 +25,6 @@ class EnvInterface(ABC):
 
     @abstractmethod
     def env_reset(self):
-        # Sets the initial obs
         pass
 
     @abstractmethod
@@ -31,7 +32,7 @@ class EnvInterface(ABC):
         pass
 
     @abstractmethod
-    def env_action(self, action):
+    def env_action(self, action, episode_step):
         pass
 
     @abstractmethod
@@ -41,7 +42,8 @@ class EnvInterface(ABC):
 
 class GymInterface(EnvInterface):
     def __init__(self, env):
-        super(GymInterface, self).__init__(env=env)
+        super(GymInterface, self).__init__(env=env.env)
+        self.step_limit = env.spec.max_episode_steps
 
     def get_obs_shape(self):
         return self.env.observation_space.shape
@@ -60,11 +62,15 @@ class GymInterface(EnvInterface):
         action = self.env.action_space.sample()
         return action
 
-    def env_action(self, action):
+    def env_action(self, action, episode_step):
         if isinstance(action.dtype, tf.DType):
             action = action.numpy()
         observation, reward, done, info = self.env.step(action)
-        return observation, reward, done, info
+        if bool(done) is True:
+            markov_done = False if episode_step == self.step_limit else True
+        else:
+            markov_done = False
+        return observation, reward, done, markov_done, info
 
     def get_copy(self):
         env_id = self.env.spec.id

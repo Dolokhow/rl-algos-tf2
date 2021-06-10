@@ -304,39 +304,44 @@ class Trainer:
 
     def train(self):
         num_updates = 0
-        while self.train_runner.done is False:
-            self.train_runner.run()
-            loss_summaries = self.update()
-            num_updates += 1
-            train_tracker_history = os.path.join(self.log_dir, 'train_tracker.json')
+        train_done = False
+        while not train_done:
+            self.log_var = 'TRAIN'
+            train_done = self.train_runner.run()
 
-            if self.train_runner.total_step % self.train_params['step_summary_interval'] == 0:
-                self._store_summaries(summaries=loss_summaries)
-                with open(train_tracker_history, 'w') as train_history:
-                    json.dump(
-                        {
-                            'returns_history': self.train_runner.tracker.returns_history,
-                            'options_history': self.train_runner.tracker.options_history
-                        },
-                        train_history,
-                        indent=4
-                    )
-                self.logger.info('{0: <5} :: STEP: {1: >7}/{2: <7} :: Storing summaries.'.format(
-                    self.log_var, self.train_runner.total_step, self.train_runner.total_steps))
-            if self.evaluate is True and num_updates % self.evaluation_params['update_eval_interval'] == 0:
-                if self.agent.full_ep_options is True:
-                    options_to_test = self.train_runner.tracker.options_ranking[:self.evaluation_params['num_top_options']]
-                else:
-                    options_to_test = [self.agent.get_cur_option_id()]
+            if not train_done:
+                loss_summaries = self.update()
+                num_updates += 1
+                train_tracker_history = os.path.join(self.log_dir, 'train_tracker.json')
 
-                for option_id in options_to_test:
-                    self.eval_runner.cur_opt_id = option_id
-                    self.eval_runner.run()
-                    # Could be a hard reset as well, this way it will keep track of returns and options history
-                    # through all evaluation calls, ie. it's Tracker will not be reset!
-                    # self.eval_runner.soft_reset()
-                eval_summaries = self.eval_runner.tracker.get_summaries()
-                self._store_summaries(summaries=eval_summaries)
+                if self.train_runner.total_step % self.train_params['step_summary_interval'] == 0:
+                    self._store_summaries(summaries=loss_summaries)
+                    with open(train_tracker_history, 'w') as train_history:
+                        json.dump(
+                            {
+                                'returns_history': self.train_runner.tracker.returns_history,
+                                'options_history': self.train_runner.tracker.options_history
+                            },
+                            train_history,
+                            indent=4
+                        )
+                    self.logger.info('{0: <5} :: STEP: {1: >7}/{2: <7} :: Storing summaries.'.format(
+                        self.log_var, self.train_runner.total_step, self.train_runner.total_steps))
+                if self.evaluate is True and num_updates % self.evaluation_params['update_eval_interval'] == 0:
+                    self.log_var = 'EVAL'
+                    if self.agent.full_ep_options is True:
+                        options_to_test = self.train_runner.tracker.options_ranking[:self.evaluation_params['num_top_options']]
+                    else:
+                        options_to_test = [self.agent.get_cur_option_id()]
+
+                    for option_id in options_to_test:
+                        self.eval_runner.cur_opt_id = option_id
+                        _ = self.eval_runner.run()
+                        # Could be a hard reset as well, this way it will keep track of returns and options history
+                        # through all evaluation calls, ie. it's Tracker will not be reset!
+                        # self.eval_runner.soft_reset()
+                    eval_summaries = self.eval_runner.tracker.get_summaries()
+                    self._store_summaries(summaries=eval_summaries)
 
 
 # Handles running the episodes. Handles agent - environment interactions.
@@ -418,8 +423,16 @@ class Runner:
         self.total_step = 0
         self.episode_step = 0
         self.total_episode = 0
-        self.done = False
         self.ep_start_t = time.perf_counter()
+
+    def load_agent(self, ckpt_path):
+        checkpoint = tf.train.Checkpoint(self.agent)
+        # Restore the checkpointed values to the `agent` object.
+        checkpoint.restore(ckpt_path)
+
+    # TODO: See how to handle this.
+    def load_history(self, history_path):
+        pass
 
     def _init_opt_obs(self):
         obs = self.env.env_reset()
@@ -431,9 +444,9 @@ class Runner:
         return self.agent.select_action(obs=tf.constant(obs), test=test)
 
     def _take_step(self, action):
-        obs, reward, done, env_args = self.env.env_action(action=action)
+        obs, reward, done, markov_done, env_args = self.env.env_action(action=action, episode_step=self.episode_step)
         obs, option_id = self.agent.modify_observation(obs=obs)
-        return obs, reward, option_id, done, env_args
+        return obs, reward, option_id, done, markov_done, env_args
 
     def _update_counters(self, done):
         self.total_step += 1
@@ -459,7 +472,6 @@ class Runner:
         self.total_step = 0
         self.episode_step = 0
         self.total_episode = 0
-        self.done = False
         self.ep_start_t = time.perf_counter()
         self.agent.on_new_episode()
         self.obs = self._init_opt_obs()
@@ -480,9 +492,11 @@ class Runner:
                 else:
                     option_segment = info_dict['option_id']
                 self.logger.info('{0: <5} :: STEP: {1: >7}/{2: <7} :: Episode {3: <6} finished @ {4: <6} step. '
-                                 'REWARD: {5: >10.2f}. {6: <12} FPS: {7: >8.2f}. ABS TIME [ms]: {8: >10.1f}.'.format(
-                    self.log_var, self.total_step, self.total_steps, self.total_episode, info_dict['ep_step'],
-                    info_dict['returns'], option_segment, info_dict['fps'], info_dict['elapsed_time']))
+                                 'REWARD: {5: >10.2f}. {6: <12} FPS: {7: >8.2f}. ABS TIME [ms]: {8: >10.1f}. '
+                                 'TERMINAL STATE: {9}.'.format(
+                                    self.log_var, self.total_step, self.total_steps, self.total_episode,
+                                    info_dict['ep_step'], info_dict['returns'], option_segment, info_dict['fps'],
+                                    info_dict['elapsed_time'], info_dict['true_done']))
             elif origin == 'store_interval':
                 self.logger.warning('{0: <5} :: Store interval not provided but ckpt_path suggests that '
                                     'storing should be done. Assuming store_interval to be the same as summary_interval'
@@ -507,19 +521,24 @@ class Runner:
 
             self.renderer.render_frame(env=self.env.env)
             action = self.select_action(obs=self.obs, test=self.test)
-            next_obs, reward, option_id, done, _ = self._take_step(action=action)
-
+            next_obs, reward, option_id, done, markov_done, _ = self._take_step(action=action)
+            # If one wants to bootstrap (overwrite environment max steps param if environment has one)
+            # we should pass markov_done instead of done. The rest of the code should work as is,
+            # except in a special case where terminal condition overlaps
+            # with the non markov end criterion (env max steps). This is the reason done and markov_done
+            # are kept as separate variables.
             ep_finished, ep_step, fps, elapsed_time = self._update_counters(done=done)
+
             returns = self.tracker.update_metrics(
                 reward=reward,
                 option_id=option_id,
                 episode_id=self.total_episode,
                 total_step=self.total_step,
                 done=ep_finished,
-                is_natural=ep_finished == bool(done)
+                is_natural=ep_finished == bool(markov_done)
             )
             if self.replay_buffer is not None:
-                self.replay_buffer.add(obs=self.obs, action=action, next_obs=next_obs, reward=reward, done=done)
+                self.replay_buffer.add(obs=self.obs, action=action, next_obs=next_obs, reward=reward, done=markov_done)
 
             if ep_finished:
                 self.agent.on_new_episode()
@@ -535,7 +554,8 @@ class Runner:
                         'elapsed_time': elapsed_time,
                         'returns': returns,
                         'option_id': str(option_id) if self.agent.full_ep_options is True and self.agent.num_options > 1
-                        else ''
+                        else '',
+                        'true_done': 'True' if bool(markov_done) is True else 'False'
                     }
                 )
             else:
@@ -546,11 +566,11 @@ class Runner:
             if self.test is False and self.total_step > self.warmup_steps and self.total_step % self.update_interval == 0:
                 # Saving this option id for when this method is being called again
                 self.cur_opt_id = self.agent.get_cur_option_id()
-                break
+                return False
 
         if self.total_step >= self.total_steps:
-            self.done = True
             self.soft_reset()
+            return True
 
 
 # TODO: Implement optional buffer that keeps track of past trajectories and rewards!
@@ -674,11 +694,18 @@ class Tracker:
 
         return cumm_ep_return
 
-    def update_complete_history(self, obs, next_obs, reward, option_id, episode_id, done, is_natural):
+    def update_complete_history(self, obs, next_obs, reward, option_id, total_step, episode_id, done, is_natural):
         if self.store_trajectories is True:
             # TODO: Implement trajectory tracking.
             pass
-        self.update_metrics(reward=reward, option_id=option_id, episode_id=episode_id, done=done, is_natural=is_natural)
+        self.update_metrics(
+            reward=reward,
+            option_id=option_id,
+            episode_id=episode_id,
+            total_step=total_step,
+            done=done,
+            is_natural=is_natural
+            )
 
     def get_summaries(self):
         summaries = []
