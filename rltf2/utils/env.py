@@ -83,7 +83,7 @@ class Renderer(ABC):
         pass
 
     @abstractmethod
-    def render_frame(self, env):
+    def render_frame(self, env, option_id=None, total_reward=None, *args):
         pass
 
 
@@ -91,19 +91,20 @@ class RenderDummy(Renderer):
     def __init__(self):
         super(RenderDummy, self).__init__()
 
-    def render_frame(self, env):
+    def render_frame(self, env, option_id=None, total_reward=None, *args):
         pass
 
 
 class GymRenderer(Renderer):
-    def __init__(self, custom_render):
+    def __init__(self, custom_render, store_dir=None):
         super(GymRenderer, self).__init__()
-        if custom_render is True:
+        if custom_render is True or store_dir is not None:
             self.render_mode = 'rgb_array'
         else:
             self.render_mode = 'human'
+        self.store_dir = store_dir
 
-    def render_frame(self, env):
+    def render_frame(self, env, option_id=None, total_reward=None, *args):
         ret = env.render(mode=self.render_mode)
         if self.render_mode == 'rgb_array':
             # Implement custom rendering here using ret param!

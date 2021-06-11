@@ -519,7 +519,7 @@ class Runner:
             if self.defer_storing is False and self.total_step % self.store_interval == 0:
                 self.ckpt_manager.save()
 
-            self.renderer.render_frame(env=self.env.env)
+            self.renderer.render_frame(env=self.env.env, option_id=self.cur_opt_id, total_reward=self.tracker.returns_ep)
             action = self.select_action(obs=self.obs, test=self.test)
             next_obs, reward, option_id, done, markov_done, _ = self._take_step(action=action)
             # If one wants to bootstrap (overwrite environment max steps param if environment has one)
@@ -740,3 +740,4 @@ class Tracker:
                         summary = [summary_id, 'scalar', mean_metric]
                         summaries.append(summary)
         return summaries
+
