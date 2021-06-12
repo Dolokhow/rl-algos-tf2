@@ -142,3 +142,11 @@ def configure_tf_checkpoints(policy, dir_path):
     return checkpoint, checkpoint_manager
 
 
+def find_files_by_part(folder, name_part, ext=''):
+    files_in_dir = [os.path.join(folder, file) for file in os.listdir(folder) if
+                    name_part in file and file.endswith(ext)]
+    return files_in_dir
+
+
+
+

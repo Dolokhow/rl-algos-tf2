@@ -187,6 +187,10 @@ class Trainer:
         if step_update_interval is None:
             step_update_interval = 1
 
+        num_updates = self._parse_single_arg(params_dict=train_sect, arg='num_updates', required=False, arg_type=int)
+        if num_updates is None:
+            num_updates = 1
+
         step_store_interval = self._parse_single_arg(params_dict=train_sect, arg='step_store_interval', required=False, arg_type=int)
         if step_store_interval is None:
             step_store_interval = int(total_steps / 10)
@@ -194,6 +198,10 @@ class Trainer:
         step_summary_interval = self._parse_single_arg(params_dict=train_sect, arg='step_summary_interval', required=False, arg_type=int)
         if step_summary_interval is None:
             step_summary_interval = int(total_steps / 100)
+
+        summary_tracker_interval = self._parse_single_arg(params_dict=train_sect, arg='summary_tracker_interval', required=False, arg_type=int)
+        if summary_tracker_interval is None:
+            summary_tracker_interval = 1
 
         average_factor = self._parse_single_arg(params_dict=train_sect, arg='average_factor', required=False, arg_type=int)
         if average_factor is None:
@@ -219,8 +227,10 @@ class Trainer:
             'max_steps_per_ep': max_steps_per_ep,
             'batch_size': batch_size,
             'step_update_interval': step_update_interval,
+            'num_updates': num_updates,
             'step_store_interval': step_store_interval,
             'step_summary_interval': step_summary_interval,
+            'summary_tracker_interval': summary_tracker_interval,
             'average_factor': average_factor,
             'data': ret_data_dict
         }
@@ -310,12 +320,18 @@ class Trainer:
             train_done = self.train_runner.run()
 
             if not train_done:
-                loss_summaries = self.update()
-                num_updates += 1
+                for _ in range(max(1, self.train_params['num_updates'])):
+                    loss_summaries = self.update()
+                    num_updates += 1
                 train_tracker_history = os.path.join(self.log_dir, 'train_tracker.json')
 
                 if self.train_runner.total_step % self.train_params['step_summary_interval'] == 0:
                     self._store_summaries(summaries=loss_summaries)
+                    self.logger.info('{0: <5} :: STEP: {1: >7}/{2: <7} :: Storing summaries.'.format(
+                        self.log_var, self.train_runner.total_step, self.train_runner.total_steps))
+
+                if self.train_runner.total_step % (self.train_params['step_summary_interval'] *
+                                                   self.train_params['summary_tracker_interval']) == 0:
                     with open(train_tracker_history, 'w') as train_history:
                         json.dump(
                             {
@@ -325,8 +341,9 @@ class Trainer:
                             train_history,
                             indent=4
                         )
-                    self.logger.info('{0: <5} :: STEP: {1: >7}/{2: <7} :: Storing summaries.'.format(
-                        self.log_var, self.train_runner.total_step, self.train_runner.total_steps))
+                        self.logger.info('{0: <5} :: STEP: {1: >7}/{2: <7} :: Storing train tracker data.'.format(
+                            self.log_var, self.train_runner.total_step, self.train_runner.total_steps))
+
                 if self.evaluate is True and num_updates % self.evaluation_params['update_eval_interval'] == 0:
                     self.log_var = 'EVAL'
                     if self.agent.full_ep_options is True:
@@ -475,6 +492,7 @@ class Runner:
         self.ep_start_t = time.perf_counter()
         self.agent.on_new_episode()
         self.obs = self._init_opt_obs()
+        self.renderer.end_video()
         self.cur_opt_id = self.agent.get_cur_option_id()
 
     def hard_reset(self):
@@ -519,7 +537,11 @@ class Runner:
             if self.defer_storing is False and self.total_step % self.store_interval == 0:
                 self.ckpt_manager.save()
 
-            self.renderer.render_frame(env=self.env.env, option_id=self.cur_opt_id, total_reward=self.tracker.returns_ep)
+            self.renderer.render_frame(
+                env=self.env.env,
+                option_id=self.cur_opt_id,
+                total_reward=self.tracker.ep_cur_return
+            )
             action = self.select_action(obs=self.obs, test=self.test)
             next_obs, reward, option_id, done, markov_done, _ = self._take_step(action=action)
             # If one wants to bootstrap (overwrite environment max steps param if environment has one)
@@ -545,6 +567,7 @@ class Runner:
                 if self.opt_persist is True:
                     self.agent.set_cur_option_id(option_id=option_id)
                 self.obs = self._init_opt_obs()
+                self.renderer.end_video()
 
                 self._log_progress(
                     origin='episode_end',
@@ -587,6 +610,7 @@ class Tracker:
 
         self.returns_ep = []
         self.options_ep = []
+        self.ep_cur_return = 0
 
         self.returns_history = []
         self.options_history = {}
@@ -614,6 +638,7 @@ class Tracker:
     def reset(self):
         self.returns_ep = []
         self.options_ep = []
+        self.ep_cur_return = 0
 
         self.returns_history = []
         self.options_history = {}
@@ -640,8 +665,9 @@ class Tracker:
 
     def update_metrics(self, reward, option_id, episode_id, total_step, done, is_natural):
         self.returns_ep.append(reward)
+        self.ep_cur_return += reward
         self.options_ep.append(option_id)
-        cumm_ep_return = np.sum(self.returns_ep)
+        cumm_ep_return = self.ep_cur_return
 
         if done is True:
             # Update reward history
@@ -691,6 +717,7 @@ class Tracker:
                 pass
             self.returns_ep = []
             self.options_ep = []
+            self.ep_cur_return = 0
 
         return cumm_ep_return
 

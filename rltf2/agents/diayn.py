@@ -8,7 +8,7 @@ from rltf2.utils.vector_ops import shape_expand_axis, split_vector, force_merge_
 
 
 class DIAYN(SAC):
-    def __init__(self, action_shape, obs_shape, num_options=20, max_action=1., lr=3e-4, actor_units=(256, 256),
+    def __init__(self, action_shape, obs_shape, num_options=20, add_p_z=True, max_action=1., lr=3e-4, actor_units=(256, 256),
                  critic_units=(256, 256), discriminator_units=(100, 100), smooth_fact=5e-3, temp=.2, discount=0.99,
                  input_dtype=tf.float32):
         # Constructs SAC which is a basis for DIYAN. Observation that SAC receives is [env_obs, option_one_hot].
@@ -37,6 +37,7 @@ class DIAYN(SAC):
         self.num_options = num_options
         self._cur_option = self._sample_option()
         self._p_z = np.full(self.num_options, 1 / self.num_options)
+        self._add_p_z = add_p_z
         self.eps = 1e-6
 
         self.discriminator = GPClassifier(
@@ -114,7 +115,9 @@ class DIAYN(SAC):
                 labels=gt_batch_options,
                 logits=discriminator_out
             )
-            reward_surrogate = tf.stop_gradient(-1 * discr_log - log_p_z)
+            reward_surrogate = tf.stop_gradient(-1 * discr_log)
+            if self._add_p_z is True:
+                reward_surrogate = tf.stop_gradient(reward_surrogate - log_p_z)
 
             # Equation (7) SAC, reward from environment substituted by option based reward from DIAYN
             q_targ = tf.stop_gradient(reward_surrogate + batch_not_done * self.discount * next_v_targ)

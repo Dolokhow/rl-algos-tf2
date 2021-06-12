@@ -6,7 +6,7 @@ from rltf2.agents.diayn import DIAYN
 
 CONFIG_PATH = '/Users/djordjebozic/ML/personal/RL/rl_projects/algos/docs/config.yaml'
 # Pendulum-v0, Hopper-v2, Ant-v2, HalfCheetah-v2
-ENV_NAME = "HalfCheetah-v2"
+ENV_NAME = "MountainCarContinuous-v0"
 CUSTOM_RENDER = False
 USE_DIYAN = True
 NUM_OPTIONS = 50
@@ -22,6 +22,11 @@ if __name__ == '__main__':
         renderer = RenderDummy()
     else:
         renderer = GymRenderer(custom_render=CUSTOM_RENDER)
+
+    if "MountainCar" in ENV_NAME:
+        add_p_z = False
+    else:
+        add_p_z = True
 
     if not USE_DIYAN:
         policy = SAC(
@@ -42,6 +47,7 @@ if __name__ == '__main__':
             obs_shape=env.observation_space.shape,
             max_action=env.action_space.high[0],
             num_options=NUM_OPTIONS,
+            add_p_z=add_p_z,
             lr=3e-4,
             actor_units=[300, 300],
             critic_units=[300, 300],

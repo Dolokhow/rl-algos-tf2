@@ -4,9 +4,21 @@ train:
     warmup_steps: 10000
     max_steps_per_ep: 1000
     batch_size: 256
+    # After how many agent steps will agent be updated.
     step_update_interval: 1
+    # How many batches will be used to update the agent when updating is done.
+    num_updates: 1
+    # After how many agent steps will agent checkpoints be stored.
     step_store_interval: 4e3
+    # After how many agent steps will Tensorboard summaries be stored.
     step_summary_interval: 5e3
+    # After how many stored summaries will train tracker data be stored. With step_summary_interval 5e3
+    # and summary_tracker_interval 20 train tracker data will be stored after every 100K agent steps.
+    # Frequency of storing tracker data does not impact the frequency of stored data, but does impact
+    # train procedure running time. Store as least often as possible while being sure that no data
+    # will be missing in the end.
+    summary_tracker_interval: 20
+    # How many past episodes will be used to calculate performance when reporting Tensorboard summary data.
     average_factor: 1
     data:
       # train_method == TD (for TD methods where replay_buffer will be used) or tran_method == policy_optimization where
